@@ -45,8 +45,7 @@ while not localPlayer do
 end
 
 local mFloor, mClamp, mAbs = math.floor, math.clamp, math.abs
-local mRad, mExp, mSin, mCos = math.rad, math.exp, math.sin, math.cos
-local mRandom = math.random
+local mRad, mSin, mCos = math.rad, math.sin, math.cos
 local v2, v3 = Vector2.new, Vector3.new
 local cNew = CFrame.new
 local cAngles = CFrame.Angles
@@ -56,6 +55,8 @@ local cskNew = ColorSequenceKeypoint.new
 local sFormat, sFind, sLower = string.format, string.find, string.lower
 local tUnpack = table.unpack or unpack
 local osClock = os.clock
+
+local DrawingOK = pcall(function() local t = Drawing.new("Line"); t:Remove() end)
 
 local MINECRAFTIA_FACE = nil
 do
@@ -83,12 +84,17 @@ local function ApplyFont(label)
     end
 end
 
+local BLUE_BRIGHT = rgb(140, 180, 255)
+local BLUE_MID    = rgb(80, 130, 220)
+local BLUE_DARK   = rgb(30, 60, 140)
+local BLUE_DEEP   = rgb(15, 30, 80)
+
 local Guards = {
-    Box1 = rgb(214, 129, 129),
-    Box2 = rgb(120, 71, 71),
-    Text1 = rgb(201, 79, 79),
-    Health1 = rgb(201, 79, 79),
-    Health2 = rgb(102, 41, 41),
+    Box1 = BLUE_BRIGHT,
+    Box2 = BLUE_DEEP,
+    Text1 = BLUE_BRIGHT,
+    Health1 = BLUE_BRIGHT,
+    Health2 = BLUE_DEEP,
 }
 
 local WM_BLUE = rgb(30, 60, 120)
@@ -96,55 +102,92 @@ local WM_BLUE_BRIGHT = rgb(45, 90, 180)
 
 local Settings = {
     Enabled = true, RenderDistance = 1000,
-    BoxEnabled = true, BoxColor = Guards.Box1, BoxThickness = 1,
+    BoxEnabled = true, BoxColor = BLUE_BRIGHT, BoxThickness = 1,
     BoxOutlineColor = rgb(0, 0, 0), BoxOutlineThick = 1,
-    BoxFillEnabled = true, BoxFillColor1 = Guards.Box1, BoxFillColor2 = Guards.Box2, BoxFillTransp = 0.75, BoxFillRotation = 90,
-    NameEnabled = true, NameColor = Guards.Text1, NameSize = 13,
-    DistEnabled = true, DistColor = Guards.Text1, DistSize = 13,
+    BoxFillEnabled = true, BoxFillColor1 = BLUE_BRIGHT, BoxFillColor2 = BLUE_DEEP, BoxFillTransp = 0.75, BoxFillRotation = 90,
+    NameEnabled = true, NameColor = BLUE_BRIGHT, NameSize = 13,
+    DistEnabled = true, DistColor = BLUE_BRIGHT, DistSize = 13,
     HealthBar = true,
-    HealthBarColor1 = Guards.Health1, HealthBarColor2 = Guards.Health2,
-    WeaponEnabled = true, WeaponColor = Guards.Text1, WeaponSize = 12,
+    HealthBarColor1 = BLUE_BRIGHT, HealthBarColor2 = BLUE_DEEP,
+    WeaponEnabled = true, WeaponColor = BLUE_BRIGHT, WeaponSize = 12,
     SelfESPEnabled = true,
 
     SA = { Enabled = false, TargetPart = "HeadHitbox", TargetMode = "Distance", FOVRadius = 200, MaxDistance = 500,
            HitChance = 100, ShowFOV = true, TargetLine = false },
-    SAColor = { NoTarget = rgb(255,255,255), Target = rgb(255,0,0) },
+
+    SAColor = { NoTarget = BLUE_BRIGHT, Target = BLUE_BRIGHT },
+
     SAOutline = {
         OuterColor = rgb(0, 0, 0),
-        InnerColor = rgb(255, 255, 255),
-        OuterThickness = 1,
-        InnerThickness = 1,
+        InnerColor = rgb(0, 0, 0),
+        OuterThickness = 2,
+        InnerThickness = 2,
+        FillEnabled = false,
+        FillColorLight = BLUE_BRIGHT,
+        FillColorDark  = BLUE_DEEP,
+        FillTransparency = 0.9,
+        GradientLight = BLUE_BRIGHT,
+        GradientDark  = BLUE_DEEP,
     },
-    Tracers = { Enabled = false, Color = rgb(255,255,255), TextureID = "rbxassetid://12781852245",
+
+    SnapLine = {
+        Color = BLUE_BRIGHT,
+        OutlineColor = rgb(0, 0, 0),
+        Thickness = 2,
+        OutlineThickness = 4,
+        Transparency = 0,
+        OutlineTransparency = 0,
+    },
+
+    Tracers = { Enabled = false, Color = BLUE_BRIGHT, TextureID = "rbxassetid://12781852245",
                 Width = 1.5, Transparency = 0, LifeTime = 0.5 },
-    Hitbox = { Enabled = false, Size = 5, Color = rgb(255,0,0), Transparency = 0.2 },
-    Guns = { RapidFire = false, RapidSpeed = 0.02, FullAuto = false, NoRecoil = false,
-             MeleeMods = false, MeleeSpeed = 0.05, MeleeRange = 5 },
+
+    Hitbox = { Enabled = false, Size = 5, Color = BLUE_BRIGHT, Transparency = 0.2 },
+
+    Guns = { RapidFire = false, RapidSpeed = 0.02, FullAuto = false, NoRecoil = false },
     Reload = { Enabled = false, Auto = false, IsReloading = false, ReloadUntil = 0 },
-    AntiAim = { HeadTilt = false, HeadPitch = -45, Enabled = false, Mode = "Spin", Speed = 180, JitterRange = 45, T = 0 },
+    AntiAim = { Enabled = false, Mode = "Spin", Speed = 180, JitterRange = 45, T = 0 },
     Spin = { Enabled = false, Speed = 180 },
     Speed = { Enabled = false, Value = 30 },
-    CopterSpeed = { Enabled = false, Value = 50 },
     WaterSpeed = { Enabled = false, Value = 50 },
     NoJumpDelay = { Enabled = false, Conn = nil, LastJump = 0 },
     ThirdPerson = { Enabled = false, Distance = 13, Height = 4.2 },
     Spider = { Enabled = false, Speed = 50 },
     JumpStun = { Enabled = false, Height = 100 },
     CopterFly = { Enabled = false, Speed = 100, bodyVel = nil, bodyGyro = nil },
-    SkyColor = { Enabled = false, Color = rgb(135,200,255) },
-    Water = { Enabled = false, Color = rgb(128,128,128), Reflectance = 0.3, OrigColor = nil, OrigRef = nil },
-    HitSound = { Enabled = false, Choice = "None", Volume = 1, Originals = {} },
+    SkyColor = { Enabled = false, Color = BLUE_BRIGHT },
+    Water = { Enabled = false, Color = BLUE_MID, Reflectance = 0.3, OrigColor = nil, OrigRef = nil },
+
+    HitSound = {
+        Enabled = false,
+        Choice = "None",
+        Volume = 1,
+        Originals = {},
+        DefaultID = "rbxassetid://121566025787365",
+    },
+
     KillSound = { Enabled = false, Volume = 1, Choice = "never lose" },
-    HL = { Enabled = false, Color = rgb(176,176,209), Position = "Center", Duration = 5 },
-    HM = { Enabled = false, Color = Color3.new(1,1,1), KillColor = rgb(220,80,80),
-           Size = 12, Thickness = 2, OutlineThickness = 4, OutlineColor = Color3.new(0,0,0), Duration = 2.5 },
+
+    HL = { Enabled = false, Color = BLUE_BRIGHT, Position = "Center", Duration = 5 },
+
+    HM = {
+        Enabled = false,
+        Color = BLUE_BRIGHT,
+        KillColor = BLUE_MID,
+        Size = 12,
+        Thickness = 2,
+        OutlineThickness = 4,
+        OutlineColor = rgb(0, 0, 0),
+        Duration = 2.5,
+    },
+
     NoDecoration = false,
     KillNotify = false,
     NoSpread = { Enabled = false },
-    Model = { Enabled = false, Selected = "Tung Tung Sahur", Scale = 1, YOffset = 0 },
+    Model = { Enabled = true, Selected = "Tung Tung Sahur", Scale = 1, YOffset = 0 },
     Watermark = { Enabled = true },
     Inspector = { Enabled = false },
-    Backtrack = { Enabled = false, Duration = 0.6, UpdateRate = 0.05, Color = rgb(80, 140, 255), Transparency = 0.55, MaxPoints = 12, OffsetBack = 3 },
+    Backtrack = { Enabled = false, Duration = 0.6, UpdateRate = 0.05, Color = BLUE_BRIGHT, Transparency = 0.55, MaxPoints = 12, OffsetBack = 3 },
 }
 
 local KillSoundChoices = {
@@ -157,14 +200,6 @@ local KillSoundChoices = {
     ["Kill Streak"]    = "rbxassetid://132970652194118",
 }
 local KillSoundNames = { "never lose", "Monster kill", "Ultra kill", "TF2", "Boom", "Gaster Blaster", "Kill Streak" }
-
-local HitSoundId = {
-    Bameware = '3124331820', Bell = '6534947240', Bubble = '6534947588', Pick = '1347140027',
-    Pop = '198598793', Rust = '1255040462', Sans = '3188795283', Fart = '130833677', Big = '5332005053',
-    Vine = '5332680810', Bruh = '4578740568', Skeet = '5633695679', Neverlose = '6534948092',
-    Fatality = '6534947869', Bonk = '5766898159', Minecraft = '4018616850',
-}
-local HitSoundNames = { 'Bameware', 'Bubble', 'Pop', 'Sans', 'Big', 'Bruh', 'Neverlose', 'Bell', 'Pick', 'Rust', 'Fart', 'Vine', 'Skeet', 'Fatality', 'Minecraft', 'Bonk', 'None' }
 
 local WeaponIcons = {}
 local function Reg(id, ...)
@@ -308,7 +343,7 @@ local function CreateESP(player)
     Data.Root = Root
 
     local BoxFill = Instance.new("Frame")
-    BoxFill.BackgroundColor3 = Guards.Box1
+    BoxFill.BackgroundColor3 = BLUE_BRIGHT
     BoxFill.BackgroundTransparency = Settings.BoxFillTransp
     BoxFill.BorderSizePixel = 0
     BoxFill.Position = UDim2.new(0, 0, 0, 0)
@@ -319,7 +354,7 @@ local function CreateESP(player)
     Data.BoxFill = BoxFill
     local BoxFillGradient = Instance.new("UIGradient")
     BoxFillGradient.Rotation = 90
-    BoxFillGradient.Color = csNew({ cskNew(0, Guards.Box1), cskNew(1, Guards.Box2) })
+    BoxFillGradient.Color = csNew({ cskNew(0, BLUE_BRIGHT), cskNew(1, BLUE_DEEP) })
     BoxFillGradient.Parent = BoxFill
     Data.BoxFillGradient = BoxFillGradient
 
@@ -362,10 +397,15 @@ local function CreateESP(player)
     BoxMainFrame.Parent = Root
     local MainStroke = Instance.new("UIStroke")
     MainStroke.Thickness = 1
-    MainStroke.Color = Guards.Box1
+    MainStroke.Color = BLUE_BRIGHT
     MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     MainStroke.Parent = BoxMainFrame
+    local MainGrad = Instance.new("UIGradient")
+    MainGrad.Rotation = 90
+    MainGrad.Color = csNew({ cskNew(0, BLUE_BRIGHT), cskNew(1, BLUE_DEEP) })
+    MainGrad.Parent = MainStroke
     Data.MainStroke = MainStroke
+    Data.MainGrad = MainGrad
     Data.BoxMainFrame = BoxMainFrame
 
     local HPOutline = Instance.new("Frame")
@@ -396,7 +436,7 @@ local function CreateESP(player)
     Data.HPFill = HPFill
     local HPGrad = Instance.new("UIGradient")
     HPGrad.Rotation = 90
-    HPGrad.Color = csNew({ cskNew(0, Guards.Health1), cskNew(0.5, Guards.Health2), cskNew(1, Guards.Health1) })
+    HPGrad.Color = csNew({ cskNew(0, BLUE_BRIGHT), cskNew(0.5, BLUE_MID), cskNew(1, BLUE_DEEP) })
     HPGrad.Parent = HPFill
     Data.HPGrad = HPGrad
 
@@ -404,7 +444,7 @@ local function CreateESP(player)
     NameLabel.BackgroundTransparency = 1
     NameLabel.BorderSizePixel = 0
     NameLabel.Text = player.Name
-    NameLabel.TextColor3 = Guards.Text1
+    NameLabel.TextColor3 = BLUE_BRIGHT
     NameLabel.TextSize = 13
     NameLabel.TextStrokeTransparency = 0
     NameLabel.TextStrokeColor3 = rgb(0, 0, 0)
@@ -437,7 +477,7 @@ local function CreateESP(player)
     DistLabel.BackgroundTransparency = 1
     DistLabel.BorderSizePixel = 0
     DistLabel.Text = "[0]"
-    DistLabel.TextColor3 = Guards.Text1
+    DistLabel.TextColor3 = BLUE_BRIGHT
     DistLabel.TextSize = 13
     DistLabel.TextStrokeTransparency = 0
     DistLabel.TextStrokeColor3 = rgb(0, 0, 0)
@@ -454,7 +494,7 @@ local function CreateESP(player)
     WeaponLabel.BackgroundTransparency = 1
     WeaponLabel.BorderSizePixel = 0
     WeaponLabel.Text = "[None]"
-    WeaponLabel.TextColor3 = Guards.Text1
+    WeaponLabel.TextColor3 = BLUE_BRIGHT
     WeaponLabel.TextSize = 12
     WeaponLabel.TextStrokeTransparency = 0
     WeaponLabel.TextStrokeColor3 = rgb(0, 0, 0)
@@ -584,6 +624,13 @@ local function UpdateESP()
             Data.InnerStroke.Thickness = Settings.BoxOutlineThick
             Data.MainStroke.Color = boxColor
             Data.MainStroke.Thickness = Settings.BoxThickness
+            if Data.MainGrad then
+                Data.MainGrad.Color = csNew({
+                    cskNew(0, Settings.BoxFillColor1),
+                    cskNew(1, Settings.BoxFillColor2),
+                })
+                Data.MainGrad.Rotation = Settings.BoxFillRotation
+            end
         else
             Data.BoxOuterFrame.Visible = false
             Data.BoxInnerFrame.Visible = false
@@ -597,8 +644,8 @@ local function UpdateESP()
             Data.HPFill.Size = UDim2.new(1, 0, pct, 0)
             Data.HPGrad.Color = csNew({
                 cskNew(0.0, Settings.HealthBarColor1),
-                cskNew(0.5, Settings.HealthBarColor2),
-                cskNew(1.0, Settings.HealthBarColor1),
+                cskNew(0.5, BLUE_MID),
+                cskNew(1.0, Settings.HealthBarColor2),
             })
         elseif Data.HPOutline then
             Data.HPOutline.Visible = false
@@ -702,21 +749,41 @@ do
     pcall(function() gui.Parent = CoreGui end)
     if not gui.Parent then gui.Parent = localPlayer:WaitForChild("PlayerGui") end
 
-    local ring = Instance.new("Frame")
-    ring.AnchorPoint = Vector2.new(0.5, 0.5)
-    ring.Position = UDim2.new(0.5, 0, 0.5, 0)
-    ring.BackgroundTransparency = 1
-    ring.BorderSizePixel = 0
-    ring.Visible = false
-    ring.Parent = gui
-    Instance.new("UICorner", ring).CornerRadius = UDim.new(0.5, 0)
+    local outer2Ring = Instance.new("Frame")
+    outer2Ring.AnchorPoint = Vector2.new(0.5, 0.5)
+    outer2Ring.Position = UDim2.new(0.5, 0, 0.5, 0)
+    outer2Ring.BackgroundTransparency = 1
+    outer2Ring.BorderSizePixel = 0
+    outer2Ring.Visible = false
+    outer2Ring.Parent = gui
+    Instance.new("UICorner", outer2Ring).CornerRadius = UDim.new(0.5, 0)
+
+    local outer2Stroke = Instance.new("UIStroke")
+    outer2Stroke.Color = Settings.SAOutline.OuterColor
+    outer2Stroke.Thickness = Settings.SAOutline.OuterThickness
+    outer2Stroke.Transparency = 0
+    outer2Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    outer2Stroke.Parent = outer2Ring
+
+    local outerRing = Instance.new("Frame")
+    outerRing.AnchorPoint = Vector2.new(0.5, 0.5)
+    outerRing.Position = UDim2.new(0.5, 0, 0.5, 0)
+    outerRing.BackgroundTransparency = 1
+    outerRing.BorderSizePixel = 0
+    outerRing.Visible = false
+    outerRing.Parent = outer2Ring
+    Instance.new("UICorner", outerRing).CornerRadius = UDim.new(0.5, 0)
 
     local outerStroke = Instance.new("UIStroke")
-    outerStroke.Color = Settings.SAOutline.OuterColor
-    outerStroke.Thickness = Settings.SAOutline.OuterThickness
+    outerStroke.Color = Settings.SAColor.NoTarget
+    outerStroke.Thickness = 2
     outerStroke.Transparency = 0
     outerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    outerStroke.Parent = ring
+    outerStroke.Parent = outerRing
+    local outerGrad = Instance.new("UIGradient")
+    outerGrad.Rotation = 90
+    outerGrad.Color = csNew({ cskNew(0, Settings.SAOutline.GradientLight), cskNew(1, Settings.SAOutline.GradientDark) })
+    outerGrad.Parent = outerStroke
 
     local innerRing = Instance.new("Frame")
     innerRing.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -725,7 +792,7 @@ do
     innerRing.BorderSizePixel = 0
     innerRing.Size = UDim2.new(1, -2, 1, -2)
     innerRing.Visible = false
-    innerRing.Parent = ring
+    innerRing.Parent = outerRing
     Instance.new("UICorner", innerRing).CornerRadius = UDim.new(0.5, 0)
 
     local innerStroke = Instance.new("UIStroke")
@@ -735,22 +802,53 @@ do
     innerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     innerStroke.Parent = innerRing
 
-    F.fovGui = gui
-    F.fovFill = ring
-    F.fovStroke = outerStroke
-    F.fovInnerStroke = innerStroke
-    F.fovInnerRing = innerRing
+    local fillFrame = Instance.new("Frame")
+    fillFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    fillFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    fillFrame.BackgroundColor3 = Settings.SAOutline.FillColorLight
+    fillFrame.BackgroundTransparency = Settings.SAOutline.FillTransparency
+    fillFrame.BorderSizePixel = 0
+    fillFrame.Visible = false
+    fillFrame.ZIndex = 0
+    fillFrame.Parent = outerRing
+    Instance.new("UICorner", fillFrame).CornerRadius = UDim.new(0.5, 0)
 
-    local DrawingOK = pcall(function() local t = Drawing.new("Line"); t:Remove() end)
-    local saLine
+    local fillGrad = Instance.new("UIGradient")
+    fillGrad.Rotation = 90
+    fillGrad.Color = csNew({
+        cskNew(0, Settings.SAOutline.FillColorLight),
+        cskNew(1, Settings.SAOutline.FillColorDark),
+    })
+    fillGrad.Parent = fillFrame
+
+    F.fovGui = gui
+    F.fovOuter2Ring = outer2Ring
+    F.fovOuter2Stroke = outer2Stroke
+    F.fovOuterRing = outerRing
+    F.fovOuterStroke = outerStroke
+    F.fovOuterGrad = outerGrad
+    F.fovInnerRing = innerRing
+    F.fovInnerStroke = innerStroke
+    F.fovFill = fillFrame
+    F.fovFillGrad = fillGrad
+end
+
+do
     if DrawingOK then
-        saLine = Drawing.new("Line")
-        saLine.Visible = false
-        saLine.Thickness = 1.5
-        saLine.Transparency = 1
-        saLine.ZIndex = 3
+        F.snapLineOutline = Drawing.new("Line")
+        F.snapLineOutline.Visible = false
+        F.snapLineOutline.Thickness = Settings.SnapLine.Thickness + Settings.SnapLine.OutlineThickness * 2
+        F.snapLineOutline.Color = Settings.SnapLine.OutlineColor
+        F.snapLineOutline.Transparency = Settings.SnapLine.OutlineTransparency
+        F.snapLineOutline.ZIndex = 2
+
+        F.snapLineMain = Drawing.new("Line")
+        F.snapLineMain.Visible = false
+        F.snapLineMain.Thickness = Settings.SnapLine.Thickness
+        F.snapLineMain.Color = Settings.SnapLine.Color
+        F.snapLineMain.Transparency = Settings.SnapLine.Transparency
+        F.snapLineMain.ZIndex = 3
     end
-    F.saLine = saLine
 end
 
 do
@@ -896,19 +994,22 @@ do
 end
 
 do
-    local pool, poolSize = {}, 0
-    local active = {}
+    local tracerPool, tracerPoolSize = {}, 0
+    local tracerActive = {}
 
-    local function getTr()
-        if poolSize > 0 then
-            local p = pool[poolSize]
-            pool[poolSize] = nil
-            poolSize = poolSize - 1
+    local function getTracerPart()
+        if tracerPoolSize > 0 then
+            local p = tracerPool[tracerPoolSize]
+            tracerPool[tracerPoolSize] = nil
+            tracerPoolSize = tracerPoolSize - 1
             return p
         end
         local p = Instance.new("Part")
         p.Anchored = true
         p.CanCollide = false
+        p.CanQuery = false
+        p.CanTouch = false
+        p.CastShadow = false
         p.Transparency = 1
         p.Size = v3(0.1, 0.1, 0.1)
         local a0 = Instance.new("Attachment", p)
@@ -928,12 +1029,12 @@ do
         return p
     end
 
-    local function release(p, b)
+    local function releaseTracer(p, b)
         if b then b.Enabled = false end
         if p then
             p.Parent = nil
-            poolSize = poolSize + 1
-            pool[poolSize] = p
+            tracerPoolSize = tracerPoolSize + 1
+            tracerPool[tracerPoolSize] = p
         end
     end
 
@@ -946,21 +1047,21 @@ do
                 startPos = (cam.CFrame * cNew(2.5, -1.5, -1)).Position
             end
         end
-        local p = getTr()
+        local p = getTracerPart()
         p.Parent = Workspace
         local a0 = p:FindFirstChild("A0")
         local a1 = p:FindFirstChild("A1")
         if a0 then a0.WorldPosition = startPos end
         if a1 then a1.WorldPosition = endPos end
         local b = p:FindFirstChild("B")
-        if not b then release(p) return end
+        if not b then releaseTracer(p) return end
         b.Color = ColorSequence.new(Settings.Tracers.Color)
         b.Transparency = NumberSequence.new(Settings.Tracers.Transparency)
         b.Texture = Settings.Tracers.TextureID
         b.Width0 = Settings.Tracers.Width
         b.Width1 = Settings.Tracers.Width
         b.Enabled = true
-        active[#active + 1] = { p = p, b = b, start = tick() }
+        tracerActive[#tracerActive + 1] = { p = p, b = b, start = tick() }
     end
 
     F.spawnTracerFromShot = function(origin, direction)
@@ -976,18 +1077,18 @@ do
     end
 
     F.updateTracers = function()
-        if #active == 0 then return end
+        if #tracerActive == 0 then return end
         local lt = Settings.Tracers.LifeTime
-        for i = #active, 1, -1 do
-            local t = active[i]
+        for i = #tracerActive, 1, -1 do
+            local t = tracerActive[i]
             local p, b = t.p, t.b
             if not p or not p.Parent then
-                table.remove(active, i)
+                table.remove(tracerActive, i)
             else
                 local alpha = 1 - ((tick() - t.start) / lt)
                 if alpha <= 0 then
-                    release(p, b)
-                    table.remove(active, i)
+                    releaseTracer(p, b)
+                    table.remove(tracerActive, i)
                 elseif b then
                     b.Transparency = NumberSequence.new(alpha * Settings.Tracers.Transparency)
                 end
@@ -996,14 +1097,14 @@ do
     end
 
     F.destroyAllTracers = function()
-        for i = #active, 1, -1 do
-            local t = active[i]
+        for i = #tracerActive, 1, -1 do
+            local t = tracerActive[i]
             if t and t.p then pcall(function() t.p:Destroy() end) end
-            active[i] = nil
+            tracerActive[i] = nil
         end
-        for i = 1, poolSize do pcall(function() pool[i]:Destroy() end) end
-        pool = {}
-        poolSize = 0
+        for i = 1, tracerPoolSize do pcall(function() tracerPool[i]:Destroy() end) end
+        tracerPool = {}
+        tracerPoolSize = 0
     end
 end
 
@@ -1011,7 +1112,6 @@ do
     local backtrackGhost = nil
     local backtrackParts = {}
     local lastSnap = 0
-    local backtrackFolder = nil
 
     local function cleanupBacktrack()
         if backtrackGhost then
@@ -1019,10 +1119,6 @@ do
             backtrackGhost = nil
         end
         backtrackParts = {}
-        if backtrackFolder then
-            pcall(function() backtrackFolder:Destroy() end)
-            backtrackFolder = nil
-        end
     end
 
     local function hardenPart(inst)
@@ -1038,9 +1134,6 @@ do
         inst.CustomPhysicalProperties = PhysicalProperties.new(0.01, 0.01, 0.01, 0, 0)
         inst.AssemblyLinearVelocity = v3(0, 0, 0)
         inst.AssemblyAngularVelocity = v3(0, 0, 0)
-        pcall(function()
-            inst.CollisionGroup = "FloppaBacktrack"
-        end)
     end
 
     local function buildGhost(char)
@@ -1132,6 +1225,12 @@ do
 end
 
 do
+    local gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+    F.isRostAlpha = string.find(string.lower(gameName), "rost", 1, true) ~= nil
+        or string.find(string.lower(gameName), "alpha", 1, true) ~= nil
+end
+
+do
     if hookmetamethod and getnamecallmethod and newcclosure then
         local old
         old = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
@@ -1151,7 +1250,7 @@ do
                             args[i] = cNew(F.targetPos)
                         end
                     end
-                    if origin and F.targetPos and Settings.Tracers.Enabled then
+                    if origin and F.targetPos and Settings.Tracers.Enabled and F.isRostAlpha then
                         task.spawn(F.spawnTracerFromShot, origin, F.targetPos - origin)
                     end
                     return old(self, tUnpack(args, 1, args.n))
@@ -1166,7 +1265,9 @@ do
                 if mag <= 50 then return old(self, ...) end
 
                 local camPos = Workspace.CurrentCamera.CFrame.Position
-                if (origin - camPos).Magnitude <= 5 then
+                local isFromCamera = (origin - camPos).Magnitude <= 5
+
+                if isFromCamera then
                     F.recordShot(origin, direction.Unit)
                 end
 
@@ -1175,7 +1276,11 @@ do
                     newDir = (F.targetPos - newOrigin).Unit * mag
                 end
 
-                return old(self, newOrigin, newDir, rayParams)
+                local result = old(self, newOrigin, newDir, rayParams)
+                if Settings.Tracers.Enabled and result and isFromCamera and F.isRostAlpha then
+                    task.spawn(F.createTrace, newOrigin, result.Position)
+                end
+                return result
             end
 
             return old(self, ...)
@@ -1212,7 +1317,7 @@ do
                 end
                 if patched then
                     F.markShotTarget()
-                    if origin and Settings.Tracers.Enabled then
+                    if origin and Settings.Tracers.Enabled and F.isRostAlpha then
                         task.spawn(F.spawnTracerFromShot, origin, pos - origin)
                     end
                     return origFire(self, tUnpack(args, 1, args.n))
@@ -1250,7 +1355,7 @@ do
 
     local fill = Instance.new("Frame")
     fill.Size = UDim2.new(0, 0, 1, 0)
-    fill.BackgroundColor3 = rgb(255, 200, 50)
+    fill.BackgroundColor3 = BLUE_BRIGHT
     fill.BorderSizePixel = 0
     fill.Parent = bg
     Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
@@ -1291,8 +1396,9 @@ do
         holder.Visible = true
         fill.Size = UDim2.new(progress, 0, 1, 0)
         fill.BackgroundColor3 = rgb(
-            mFloor(255 * (1 - progress) + 0.5),
-            mFloor(180 + 75 * progress + 0.5), 50)
+            mFloor(30 + 110 * progress + 0.5),
+            mFloor(60 + 120 * progress + 0.5),
+            mFloor(140 + 115 * progress + 0.5))
     end
 
     F.cleanupReload = function()
@@ -1557,7 +1663,7 @@ do
 end
 
 do
-    local gunCache, meleeCache = {}, {}
+    local gunCache = {}
     local built, scanning = false, false
 
     local function buildCaches()
@@ -1565,16 +1671,12 @@ do
         scanning = true
         task.spawn(function()
             gunCache = {}
-            meleeCache = {}
             local ok, objs = pcall(function() return getgc(true) end)
             if ok and type(objs) == "table" then
                 for _, v in pairs(objs) do
                     if type(v) == "table" then
                         if rawget(v, "FireDelay") ~= nil and rawget(v, "FiringOnCooldown") ~= nil and rawget(v, "OwnerPlayer") ~= nil then
                             gunCache[#gunCache + 1] = v
-                        end
-                        if rawget(v, "UseDelay") ~= nil and rawget(v, "Range") ~= nil and rawget(v, "UsingOnCooldown") ~= nil and rawget(v, "Destroyed") ~= true then
-                            meleeCache[#meleeCache + 1] = v
                         end
                     end
                 end
@@ -1606,20 +1708,6 @@ do
                         if rawget(v, "FireMode") ~= nil then rawset(v, "FireMode", "Auto") end
                         if rawget(v, "Auto") ~= nil then rawset(v, "Auto", true) end
                     end
-                end)
-            end
-        end
-        if Settings.Guns.MeleeMods then
-            local spd = Settings.Guns.MeleeSpeed or 0.05
-            local rng = Settings.Guns.MeleeRange or 5
-            for _, v in ipairs(meleeCache) do
-                pcall(function()
-                    if rawget(v, "Destroyed") == true then return end
-                    rawset(v, "UseDelay", spd)
-                    rawset(v, "UseTime", spd)
-                    rawset(v, "Range", rng)
-                    rawset(v, "CharacterRange", rng)
-                    rawset(v, "UsingOnCooldown", false)
                 end)
             end
         end
@@ -1876,7 +1964,7 @@ do
     inspectorScale.Scale = 1
     inspectorScale.Parent = frame
     local border = Instance.new("UIStroke", frame)
-    border.Color = rgb(30, 60, 120)
+    border.Color = BLUE_MID
     border.Thickness = 1.5
     border.Transparency = 0
 
@@ -1887,7 +1975,7 @@ do
     title.BorderSizePixel = 0
     title.Font = Enum.Font.GothamBold
     title.TextSize = 13
-    title.TextColor3 = Color3.new(1, 1, 1)
+    title.TextColor3 = BLUE_BRIGHT
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Text = "  INVENTORY"
     title.Active = true
@@ -1895,7 +1983,7 @@ do
     local accent = Instance.new("Frame")
     accent.Size = UDim2.new(1, 0, 0, 2)
     accent.Position = UDim2.new(0, 0, 1, -2)
-    accent.BackgroundColor3 = rgb(45, 90, 180)
+    accent.BackgroundColor3 = BLUE_MID
     accent.BorderSizePixel = 0
     accent.Parent = title
 
@@ -1905,7 +1993,7 @@ do
     status.BackgroundTransparency = 1
     status.Font = Enum.Font.Gotham
     status.TextSize = 10
-    status.TextColor3 = rgb(180, 180, 195)
+    status.TextColor3 = BLUE_BRIGHT
     status.TextXAlignment = Enum.TextXAlignment.Left
     status.Text = "Target must be inside Silent Aim FOV"
     status.Parent = frame
@@ -1916,7 +2004,7 @@ do
     list.BackgroundTransparency = 1
     list.BorderSizePixel = 0
     list.ScrollBarThickness = 3
-    list.ScrollBarImageColor3 = rgb(45, 90, 180)
+    list.ScrollBarImageColor3 = BLUE_MID
     list.CanvasSize = UDim2.fromOffset(0, 0)
     list.Parent = frame
 
@@ -2034,7 +2122,7 @@ do
             cell.BorderSizePixel = 0
             cell.Parent = list
             local cellStroke = Instance.new("UIStroke", cell)
-            cellStroke.Color = rgb(30, 60, 120)
+            cellStroke.Color = BLUE_MID
             cellStroke.Thickness = 1
 
             local icon = Instance.new("ImageLabel")
@@ -2053,7 +2141,7 @@ do
                 fallback.Font = Enum.Font.GothamBold
                 fallback.TextSize = 9
                 fallback.TextWrapped = true
-                fallback.TextColor3 = rgb(225, 225, 235)
+                fallback.TextColor3 = BLUE_BRIGHT
                 fallback.Text = item.Name
                 fallback.Parent = cell
             end
@@ -2066,7 +2154,7 @@ do
             name.Font = Enum.Font.Gotham
             name.TextSize = 8
             name.TextTruncate = Enum.TextTruncate.AtEnd
-            name.TextColor3 = item.Equipped and rgb(255, 85, 85) or rgb(205, 205, 215)
+            name.TextColor3 = item.Equipped and BLUE_BRIGHT or BLUE_MID
             name.Text = item.Name
             name.Parent = cell
 
@@ -2078,7 +2166,7 @@ do
                 using.BackgroundTransparency = 0.25
                 using.Font = Enum.Font.GothamBold
                 using.TextSize = 8
-                using.TextColor3 = rgb(255, 80, 80)
+                using.TextColor3 = BLUE_BRIGHT
                 using.Text = "USING"
                 using.Parent = cell
             end
@@ -2092,7 +2180,7 @@ do
                 amount.BackgroundTransparency = 0.25
                 amount.Font = Enum.Font.GothamBold
                 amount.TextSize = 8
-                amount.TextColor3 = Color3.new(1, 1, 1)
+                amount.TextColor3 = BLUE_BRIGHT
                 amount.Text = "x" .. item.Amount
                 amount.Parent = cell
             end
@@ -2134,7 +2222,7 @@ do
 
         frame.Visible = true
         title.Text = "  INVENTORY  |  " .. string.upper(plr.DisplayName)
-        status.Text = #items > 0 and (tostring(#items) .. " item type(s)  |  red = equipped") or "Inventory is empty"
+        status.Text = #items > 0 and (tostring(#items) .. " item type(s)  |  blue = equipped") or "Inventory is empty"
         if plr ~= lastPlayer or signature ~= lastSignature then
             render(items)
             lastPlayer, lastSignature = plr, signature
@@ -2344,7 +2432,7 @@ do
         lastLogByPlayer[playerName] = { time = now, health = healthValue }
 
         local isKill = killed or healthValue <= 0
-        local logColor = isKill and rgb(255, 55, 55) or Settings.HL.Color
+        local logColor = isKill and Settings.HM.KillColor or Settings.HL.Color
         local r = mFloor(logColor.R * 255)
         local g = mFloor(logColor.G * 255)
         local b = mFloor(logColor.B * 255)
@@ -2358,8 +2446,8 @@ do
         label.Size = UDim2.fromOffset(0, 18)
         label.Font = Enum.Font.Code
         label.TextSize = 13
-        label.TextColor3 = isKill and rgb(255, 55, 55) or Color3.new(1, 1, 1)
-        label.TextStrokeColor3 = Color3.new(0, 0, 0)
+        label.TextColor3 = isKill and Settings.HM.KillColor or Settings.HL.Color
+        label.TextStrokeColor3 = rgb(0, 0, 0)
         label.TextStrokeTransparency = 1
         label.TextTransparency = 1
         label.RichText = true
@@ -2396,7 +2484,6 @@ end
 do
     local queue = {}
     local DIRS = { {1,1}, {-1,1}, {1,-1}, {-1,-1} }
-    local DrawingOK = pcall(function() local t = Drawing.new("Line"); t:Remove() end)
 
     if DrawingOK then
         F.spawnHitMarker = function(worldPos, isKill)
@@ -2479,27 +2566,55 @@ do
 end
 
 do
-    local HSList = { None = "", Skeet = "rbxassetid://83717596220569", ["Sonic checkpoint"] = "rbxassetid://6817150445",
-        ["Sonic.exe laugh"] = "rbxassetid://18379039436", ["Windows XP Error"] = "rbxassetid://9066167010",
-        ["Minecraft Hit"] = "rbxassetid://8766809464", ["one sit nn dog"] = "rbxassetid://7380502345",
-        ["Door Bell"] = "rbxassetid://131845870598154", Duck = "rbxassetid://1139819274",
-        Mgs = "rbxassetid://81845122657643", Money = "rbxassetid://9117067586", Fart = "rbxassetid://4809574295",
-        Meow = "rbxassetid://7148585764", byebye = "rbxassetid://70888261086432",
-        Bell = "rbxassetid://123827281575056", Metal = "rbxassetid://9125672731",
-        Growl = "rbxassetid://136705296952779", Brutal = "rbxassetid://82176913611683",
-        Sparkle = "rbxassetid://78601008552434", ["Aray ko"] = "rbxassetid://122864243311961",
-        Hehe = "rbxassetid://18381322350" }
+    local HSList = {
+        None = "",
+        Skeet = "rbxassetid://83717596220569",
+        ["Sonic checkpoint"] = "rbxassetid://6817150445",
+        ["Sonic.exe laugh"] = "rbxassetid://18379039436",
+        ["Windows XP Error"] = "rbxassetid://9066167010",
+        ["Minecraft Hit"] = "rbxassetid://8766809464",
+        ["one sit nn dog"] = "rbxassetid://7380502345",
+        ["Door Bell"] = "rbxassetid://131845870598154",
+        Duck = "rbxassetid://1139819274",
+        Mgs = "rbxassetid://81845122657643",
+        Money = "rbxassetid://9117067586",
+        Fart = "rbxassetid://4809574295",
+        Meow = "rbxassetid://7148585764",
+        byebye = "rbxassetid://70888261086432",
+        Bell = "rbxassetid://123827281575056",
+        Metal = "rbxassetid://9125672731",
+        Growl = "rbxassetid://136705296952779",
+        Brutal = "rbxassetid://82176913611683",
+        Sparkle = "rbxassetid://78601008552434",
+        ["Aray ko"] = "rbxassetid://122864243311961",
+        Hehe = "rbxassetid://18381322350",
+    }
     local names = {}
     for n in pairs(HSList) do names[#names + 1] = n end
     F.HSNames = names
 
-    local function apply(snd, vol)
-        if not snd or not snd.Parent then return end
+    local HIT_SOUND_IDS = {
+        "HitClient", "HeadShotClient", "HitCharacterClient",
+        "Hit", "HitHead", "HitBody", "Headshot", "BodyHit", "Impact", "Hitmark",
+    }
+
+    local function isHitSound(snd)
+        if not snd or not snd:IsA("Sound") then return false end
+        local n = snd.Name
+        for _, id in ipairs(HIT_SOUND_IDS) do
+            if n == id then return true end
+        end
+        local lower = n:lower()
+        if lower:find("hit") or lower:find("headshot") then return true end
+        return false
+    end
+
+    local function applyToSound(snd, id, vol)
+        if not snd or not snd.Parent or not snd:IsA("Sound") then return end
         if not Settings.HitSound.Originals[snd] then
             Settings.HitSound.Originals[snd] = { SoundId = snd.SoundId, Volume = snd.Volume }
         end
-        local id = HSList[Settings.HitSound.Choice] or ""
-        if id ~= "" then
+        if id and id ~= "" then
             snd.SoundId = id
         else
             local o = Settings.HitSound.Originals[snd]
@@ -2508,50 +2623,87 @@ do
         snd.Volume = vol
     end
 
+    local function scanTool(tool)
+        if not tool or not tool:IsA("Tool") then return end
+        local id = HSList[Settings.HitSound.Choice] or ""
+        if Settings.HitSound.Choice == "None" then
+            id = Settings.HitSound.DefaultID
+        end
+        local vol = Settings.HitSound.Volume
+
+        for _, d in ipairs(tool:GetDescendants()) do
+            if isHitSound(d) then
+                applyToSound(d, id, vol)
+            end
+        end
+    end
+
+    local function scanChar(char)
+        if not char then return end
+        for _, d in ipairs(char:GetDescendants()) do
+            if d:IsA("Tool") then
+                scanTool(d)
+            end
+        end
+    end
+
     function F.restoreHS()
         for snd, d in pairs(Settings.HitSound.Originals) do
             if snd and snd.Parent then
-                pcall(function() snd.SoundId = d.SoundId; snd.Volume = d.Volume end)
+                pcall(function()
+                    snd.SoundId = d.SoundId
+                    snd.Volume = d.Volume
+                end)
             end
         end
         Settings.HitSound.Originals = {}
     end
 
-    local function chkTool(tool)
-        if not tool or not tool:IsA("Tool") then return end
-        task.spawn(function()
-            local ba = tool:FindFirstChild("BodyAttach") or tool:WaitForChild("BodyAttach", 5)
-            if ba then
-                for _, sn in ipairs({ "HitClient", "HeadShotClient", "HitCharacterClient" }) do
-                    local s = ba:FindFirstChild(sn) or ba:WaitForChild(sn, 3)
-                    if s and s:IsA("Sound") then apply(s, Settings.HitSound.Volume) end
-                end
-            end
-        end)
-    end
-
     function F.applyHSChar(ch)
         if not ch then return end
-        for _, c in pairs(ch:GetChildren()) do
-            if c:IsA("Tool") then chkTool(c) end
-        end
+        scanChar(ch)
     end
 
-    local hsConn = nil
+    local hsConn, hsDescConn = nil, nil
     function F.setupHSChar(ch)
         if hsConn then pcall(function() hsConn:Disconnect() end) hsConn = nil end
+        if hsDescConn then pcall(function() hsDescConn:Disconnect() end) hsDescConn = nil end
+        if not ch then return end
+
         hsConn = ch.ChildAdded:Connect(function(c)
             if Settings.HitSound.Enabled and not F.Unloaded and c:IsA("Tool") then
-                task.delay(0.3, function() chkTool(c) end)
+                task.delay(0.3, function() scanTool(c) end)
             end
         end)
+
+        hsDescConn = ch.DescendantAdded:Connect(function(d)
+            if Settings.HitSound.Enabled and not F.Unloaded and isHitSound(d) then
+                local id = HSList[Settings.HitSound.Choice] or ""
+                if Settings.HitSound.Choice == "None" then
+                    id = Settings.HitSound.DefaultID
+                end
+                applyToSound(d, id, Settings.HitSound.Volume)
+            end
+        end)
+
         task.spawn(function()
-            task.wait(1.5)
-            if Settings.HitSound.Enabled and ch and ch.Parent then F.applyHSChar(ch) end
+            task.wait(0.5)
+            if Settings.HitSound.Enabled and ch and ch.Parent then
+                scanChar(ch)
+            end
         end)
     end
 
-    F.cleanupHSChar = function() if hsConn then pcall(function() hsConn:Disconnect() end) hsConn = nil end end
+    F.cleanupHSChar = function()
+        if hsConn then pcall(function() hsConn:Disconnect() end) hsConn = nil end
+        if hsDescConn then pcall(function() hsDescConn:Disconnect() end) hsDescConn = nil end
+    end
+
+    F.trackConn(localPlayer.CharacterAdded:Connect(function(ch)
+        task.defer(function()
+            if Settings.HitSound.Enabled then F.setupHSChar(ch) end
+        end)
+    end))
 end
 
 do
@@ -2845,22 +2997,6 @@ do
 end
 
 do
-    function F.updateHeadTilt()
-        local previous = F._headTiltNeck
-        if not Settings.AntiAim.HeadTilt then
-            if previous and previous.Parent then pcall(function() previous.Transform = cNew() end) end
-            F._headTiltNeck = nil
-            return
-        end
-
-        local ch = F.char
-        local torso = ch and (ch:FindFirstChild("UpperTorso") or ch:FindFirstChild("Torso"))
-        local neck = torso and torso:FindFirstChild("Neck")
-        if not neck or not neck:IsA("Motor6D") then return end
-        F._headTiltNeck = neck
-        neck.Transform = CFrame.Angles(mRad(Settings.AntiAim.HeadPitch or -45), 0, 0)
-    end
-
     function F.updateAntiAim(dt)
         if not Settings.AntiAim.Enabled then return end
         local char = F.char
@@ -3039,13 +3175,6 @@ do
             end
         end
 
-        if Settings.CopterSpeed.Enabled and hum.Sit then
-            local md = hum.MoveDirection
-            if md.Magnitude > 0 then
-                hrp.AssemblyLinearVelocity = v3(md.X * Settings.CopterSpeed.Value, hrp.AssemblyLinearVelocity.Y, md.Z * Settings.CopterSpeed.Value)
-            end
-        end
-
         if Settings.WaterSpeed.Enabled then
             if hum:GetState() == Enum.HumanoidStateType.Swimming then
                 local bv = hrp:FindFirstChild("WSV")
@@ -3087,8 +3216,12 @@ do
 
     F.visConn = RunService.RenderStepped:Connect(function(dt)
         if F.Unloaded then
-            if F.fovFill then F.fovFill.Visible = false end
+            if F.fovOuter2Ring then F.fovOuter2Ring.Visible = false end
+            if F.fovOuterRing then F.fovOuterRing.Visible = false end
             if F.fovInnerRing then F.fovInnerRing.Visible = false end
+            if F.fovFill then F.fovFill.Visible = false end
+            if F.snapLineOutline then F.snapLineOutline.Visible = false end
+            if F.snapLineMain then F.snapLineMain.Visible = false end
             return
         end
         local cam = Workspace.CurrentCamera
@@ -3138,34 +3271,90 @@ do
             F.aimScreenPos = nil
         end
 
-        if F.saLine then
+        if F.snapLineOutline and F.snapLineMain and DrawingOK then
             if Settings.SA.Enabled and Settings.SA.TargetLine and F.aimScreenPos then
                 local vp = cam.ViewportSize
-                F.saLine.Visible = true
-                F.saLine.Color = Settings.SAColor.Target
-                F.saLine.From = v2(vp.X * 0.5, vp.Y * 0.5)
-                F.saLine.To = F.aimScreenPos
+                local centerX = vp.X * 0.5
+                local centerY = vp.Y * 0.5
+                local toX = F.aimScreenPos.X
+                local toY = F.aimScreenPos.Y
+
+                F.snapLineOutline.Visible = true
+                F.snapLineOutline.From = v2(centerX, centerY)
+                F.snapLineOutline.To = v2(toX, toY)
+                F.snapLineOutline.Color = Settings.SnapLine.OutlineColor
+                F.snapLineOutline.Thickness = Settings.SnapLine.Thickness + Settings.SnapLine.OutlineThickness * 2
+                F.snapLineOutline.Transparency = Settings.SnapLine.OutlineTransparency
+
+                F.snapLineMain.Visible = true
+                F.snapLineMain.From = v2(centerX, centerY)
+                F.snapLineMain.To = v2(toX, toY)
+                F.snapLineMain.Color = Settings.SnapLine.Color
+                F.snapLineMain.Thickness = Settings.SnapLine.Thickness
+                F.snapLineMain.Transparency = Settings.SnapLine.Transparency
             else
-                F.saLine.Visible = false
+                F.snapLineOutline.Visible = false
+                F.snapLineMain.Visible = false
             end
         end
 
         if Settings.SA.ShowFOV and Settings.SA.Enabled then
-            F.fovFill.Visible = true
-            F.fovInnerRing.Visible = true
             local vp = cam.ViewportSize
-            F.fovFill.Position = UDim2.new(0, vp.X * 0.5, 0, vp.Y * 0.5)
-            F.fovFill.Size = UDim2.new(0, Settings.SA.FOVRadius * 2, 0, Settings.SA.FOVRadius * 2)
-            F.fovStroke.Color = Settings.SAOutline.OuterColor
-            F.fovStroke.Thickness = Settings.SAOutline.OuterThickness
+            local diameter = Settings.SA.FOVRadius * 2
+            local cx, cy = vp.X * 0.5, vp.Y * 0.5
+
+            local targeting = F.targetPos ~= nil
+            local innerColor = targeting and Settings.SAColor.Target or Settings.SAColor.NoTarget
+
+            F.fovOuter2Ring.Visible = true
+            F.fovOuterRing.Visible = true
+            F.fovInnerRing.Visible = true
+
+            F.fovOuter2Ring.Position = UDim2.new(0, cx, 0, cy)
+            F.fovOuter2Ring.Size = UDim2.fromOffset(diameter + 2, diameter + 2)
+
+            F.fovOuterRing.Position = UDim2.new(0.5, 0, 0.5, 0)
+            F.fovOuterRing.Size = UDim2.new(1, 0, 1, 0)
+
+            F.fovInnerRing.Position = UDim2.new(0.5, 0, 0.5, 0)
+            F.fovInnerRing.Size = UDim2.new(1, -2, 1, -2)
+
+            F.fovOuter2Stroke.Color = Settings.SAOutline.OuterColor
+            F.fovOuter2Stroke.Thickness = Settings.SAOutline.OuterThickness
+            F.fovOuterStroke.Color = innerColor
+            F.fovOuterStroke.Thickness = 2
+
+            if F.fovOuterGrad then
+                F.fovOuterGrad.Color = csNew({
+                    cskNew(0, Settings.SAOutline.GradientLight),
+                    cskNew(1, Settings.SAOutline.GradientDark),
+                })
+                F.fovOuterGrad.Rotation = 90
+            end
+
             F.fovInnerStroke.Color = Settings.SAOutline.InnerColor
             F.fovInnerStroke.Thickness = Settings.SAOutline.InnerThickness
+
+            if Settings.SAOutline.FillEnabled then
+                F.fovFill.Visible = true
+                F.fovFill.Size = UDim2.new(1, -4, 1, -4)
+                F.fovFill.Position = UDim2.new(0, 0, 0, 0)
+                F.fovFill.AnchorPoint = Vector2.new(0, 0)
+                F.fovFill.BackgroundTransparency = Settings.SAOutline.FillTransparency
+                F.fovFillGrad.Color = csNew({
+                    cskNew(0, Settings.SAOutline.FillColorLight),
+                    cskNew(1, Settings.SAOutline.FillColorDark),
+                })
+            else
+                F.fovFill.Visible = false
+            end
         else
-            F.fovFill.Visible = false
+            F.fovOuter2Ring.Visible = false
+            F.fovOuterRing.Visible = false
             F.fovInnerRing.Visible = false
+            F.fovFill.Visible = false
         end
 
-        F.updateHeadTilt()
         F.processHitMarkers()
         F.updateSkinModel()
 
@@ -3263,7 +3452,7 @@ do
         statsLbl.Size = UDim2.new(0, 180, 0, 13)
         statsLbl.Font = Enum.Font.Gotham
         statsLbl.TextSize = 10
-        statsLbl.TextColor3 = rgb(160, 160, 180)
+        statsLbl.TextColor3 = BLUE_BRIGHT
         statsLbl.TextXAlignment = Enum.TextXAlignment.Right
         statsLbl.Text = ""
         statsLbl.Parent = wm
@@ -3342,16 +3531,16 @@ do
     ESPGroup:AddDivider()
     ESPGroup:AddToggle('esp_Self', { Text = 'Self ESP', Default = true })
 
-    ESPColorsGroup:AddLabel('Box Color 1'):AddColorPicker('esp_BoxC1', { Default = Guards.Box1 })
-    ESPColorsGroup:AddLabel('Box Color 2'):AddColorPicker('esp_BoxC2', { Default = Guards.Box2 })
+    ESPColorsGroup:AddLabel('Box Color 1 '):AddColorPicker('esp_BoxC1', { Default = BLUE_BRIGHT })
+    ESPColorsGroup:AddLabel('Box Color 2 '):AddColorPicker('esp_BoxC2', { Default = BLUE_DEEP })
     ESPColorsGroup:AddLabel('Box Outline'):AddColorPicker('esp_BoxOutline', { Default = rgb(0, 0, 0) })
     ESPColorsGroup:AddDivider()
-    ESPColorsGroup:AddLabel('Name Color'):AddColorPicker('esp_NameColor', { Default = Guards.Text1 })
-    ESPColorsGroup:AddLabel('Distance Color'):AddColorPicker('esp_DistColor', { Default = Guards.Text1 })
-    ESPColorsGroup:AddLabel('Weapon Color'):AddColorPicker('esp_WepColor', { Default = Guards.Text1 })
+    ESPColorsGroup:AddLabel('Name Color'):AddColorPicker('esp_NameColor', { Default = BLUE_BRIGHT })
+    ESPColorsGroup:AddLabel('Distance Color'):AddColorPicker('esp_DistColor', { Default = BLUE_BRIGHT })
+    ESPColorsGroup:AddLabel('Weapon Color'):AddColorPicker('esp_WepColor', { Default = BLUE_BRIGHT })
     ESPColorsGroup:AddDivider()
-    ESPColorsGroup:AddLabel('HP Color 1'):AddColorPicker('esp_HPC1', { Default = Guards.Health1 })
-    ESPColorsGroup:AddLabel('HP Color 2'):AddColorPicker('esp_HPC2', { Default = Guards.Health2 })
+    ESPColorsGroup:AddLabel('HP Color 1 '):AddColorPicker('esp_HPC1', { Default = BLUE_BRIGHT })
+    ESPColorsGroup:AddLabel('HP Color 2 '):AddColorPicker('esp_HPC2', { Default = BLUE_DEEP })
 end
 
 do
@@ -3359,51 +3548,61 @@ do
     SABox:AddToggle('sa_Enabled', { Text = 'Silent Aim', Default = false })
         :AddKeyPicker('sa_Key', { Default = 'None', Mode = 'Toggle', SyncToggleState = true, Text = 'Silent Aim' })
     SABox:AddSlider('sa_FOVRadius', { Text = 'FOV Radius', Default = 200, Min = 10, Max = 500, Rounding = 0, Suffix = 'px' })
-    SABox:AddSlider('sa_MaxDistance', { Text = 'Max Distance', Default = 500, Min = 50, Max = 3000, Rounding = 0 })
+    SABox:AddSlider('sa_MaxDistance', { Text = 'Max Distance', Default = 500, Min = 50, Max = 5000, Rounding = 0 })
     SABox:AddSlider('sa_HitChance', { Text = 'Hit Chance %', Default = 100, Min = 0, Max = 100, Rounding = 0 })
     SABox:AddToggle('sa_ShowFOV', { Text = 'Show FOV Circle', Default = true })
-    SABox:AddToggle('sa_TargetLine', { Text = 'Target Line', Default = false })
-    SABox:AddDropdown('sa_TargetPart', { Text = 'Target Part', Values = { "HeadHitbox", "Head", "HumanoidRootPart" }, Default = 1, Multi = false })
+    SABox:AddToggle('sa_TargetLine', { Text = 'Target Line ', Default = false })
+    SABox:AddDropdown('sa_TargetPart', { Text = 'Target Part', Values = { "Hitbox", "Head", "HumanoidRootPart" }, Default = 1, Multi = false })
 
-    local FOVBox = Tabs.Combat:AddRightGroupbox('FOV Outline')
-    FOVBox:AddLabel('Outer Color'):AddColorPicker('fov_OuterColor', { Default = rgb(0, 0, 0) })
-    FOVBox:AddSlider('fov_OuterThickness', { Text = 'Outer Thickness', Default = 1, Min = 1, Max = 4, Rounding = 0 })
+    local FOVBox = Tabs.Combat:AddRightGroupbox('FOV Colors')
+    FOVBox:AddLabel('FOV Ring Color'):AddColorPicker('fov_RingColor', { Default = BLUE_BRIGHT })
+    FOVBox:AddLabel('FOV Ring Target Color'):AddColorPicker('fov_RingTargetColor', { Default = BLUE_BRIGHT })
     FOVBox:AddDivider()
-    FOVBox:AddLabel('Inner Color'):AddColorPicker('fov_InnerColor', { Default = rgb(255, 255, 255) })
-    FOVBox:AddSlider('fov_InnerThickness', { Text = 'Inner Thickness', Default = 1, Min = 1, Max = 4, Rounding = 0 })
+    FOVBox:AddLabel('FOV Gradient'):AddColorPicker('fov_GradLight', { Default = BLUE_BRIGHT })
+    FOVBox:AddLabel('FOV Gradient'):AddColorPicker('fov_GradDark', { Default = BLUE_DEEP })
+    FOVBox:AddDivider()
+    FOVBox:AddLabel('FOV Outer Outline'):AddColorPicker('fov_OuterColor', { Default = rgb(0, 0, 0) })
+    FOVBox:AddLabel('FOV Inner Outline'):AddColorPicker('fov_InnerColor', { Default = rgb(0, 0, 0) })
+    FOVBox:AddDivider()
+    FOVBox:AddToggle('fov_FillEnabled', { Text = 'Enable FOV Fill', Default = false })
+    FOVBox:AddLabel('Fill '):AddColorPicker('fov_FillLight', { Default = BLUE_BRIGHT })
+    FOVBox:AddLabel('Fill '):AddColorPicker('fov_FillDark', { Default = BLUE_DEEP })
+    FOVBox:AddSlider('fov_FillTransparency', { Text = 'Fill Transparency', Default = 0.9, Min = 0, Max = 1, Rounding = 2 })
+
+    local TLBox = Tabs.Combat:AddRightGroupbox('Snapline Colors')
+    TLBox:AddLabel('Snapline Color'):AddColorPicker('tl_Color', { Default = BLUE_BRIGHT })
+    TLBox:AddLabel('Snapline Outline'):AddColorPicker('tl_OutlineColor', { Default = rgb(0, 0, 0) })
+    TLBox:AddSlider('tl_Thickness', { Text = 'Snapline Thickness', Default = 2, Min = 1, Max = 5, Rounding = 0 })
+    TLBox:AddSlider('tl_OutlineThickness', { Text = 'Outline Thickness', Default = 4, Min = 0, Max = 6, Rounding = 0 })
 
     local BT = Tabs.Combat:AddRightGroupbox('Backtrack')
     BT:AddToggle('bt_BacktrackEnabled', { Text = 'Enable Backtrack', Default = false })
     BT:AddSlider('bt_OffsetBack', { Text = 'Offset Back (studs)', Default = 3, Min = 1, Max = 15, Rounding = 1 })
     BT:AddSlider('bt_UpdateRate', { Text = 'Update Rate', Default = 0.05, Min = 0.02, Max = 0.5, Rounding = 2 })
     BT:AddSlider('bt_Transparency', { Text = 'Ghost Transparency', Default = 0.55, Min = 0, Max = 1, Rounding = 2 })
-    BT:AddLabel('Ghost Color'):AddColorPicker('bt_Color', { Default = rgb(80, 140, 255) })
+    BT:AddLabel('Ghost Color'):AddColorPicker('bt_Color', { Default = BLUE_BRIGHT })
 
     local GM = Tabs.Combat:AddRightGroupbox('Gun Mods')
     GM:AddToggle('gm_NoRecoil', { Text = 'No Recoil', Default = false })
     GM:AddToggle('gm_NoSpread', { Text = 'No Spread', Default = false })
     GM:AddToggle('gm_RapidFire', { Text = 'Rapid Fire', Default = false })
-    GM:AddSlider('gm_RapidSpeed', { Text = 'RFS', Default = 0.01, Min = 0.01, Max = 0.5, Rounding = 2 })
+    GM:AddSlider('gm_RapidSpeed', { Text = 'Rapid Fire Speed', Default = 0.01, Min = 0.01, Max = 0.5, Rounding = 2 })
     GM:AddToggle('gm_FullAuto', { Text = 'Full Auto', Default = false })
     GM:AddToggle('gm_AutoReload', { Text = 'Auto Reload', Default = false })
-
-    local MM = Tabs.Combat:AddRightGroupbox('Melee Mods')
-    MM:AddToggle('mm_Enabled', { Text = 'Melee Mods', Default = false })
-    MM:AddSlider('mm_Speed', { Text = 'Swing Speed', Default = 0.05, Min = 0.01, Max = 0.5, Rounding = 2 })
-    MM:AddSlider('mm_Range', { Text = 'Range', Default = 5, Min = 5, Max = 30, Rounding = 0 })
 
     local HB = Tabs.Combat:AddLeftGroupbox('Hitbox Expander')
     HB:AddToggle('hb_Enabled', { Text = 'Expand Hitboxes', Default = false })
     HB:AddSlider('hb_Size', { Text = 'Hitbox Size Multiplier', Default = 5, Min = 5, Max = 12.1, Rounding = 1 })
     HB:AddSlider('hb_Transparency', { Text = 'Hitbox Transparency', Default = 0.2, Min = 0, Max = 1, Rounding = 2 })
-    HB:AddLabel('Hitbox Color'):AddColorPicker('hb_Color', { Default = rgb(255, 0, 0) })
+    HB:AddLabel('Hitbox Color'):AddColorPicker('hb_Color', { Default = BLUE_BRIGHT })
 end
 
 do
     local BT = Tabs.Visuals:AddLeftGroupbox('Bullet Tracers')
     BT:AddToggle('tr_Enabled', { Text = 'Enabled', Default = false })
+    BT:AddLabel('Lag')
     BT:AddDropdown('tr_Texture', { Text = 'Texture', Values = { "Beam", "Lightning", "Heartrate", "Chain", "Glitch", "Swirl" }, Default = 1, Multi = false })
-    BT:AddLabel('Color'):AddColorPicker('tr_Color', { Default = rgb(255, 255, 255) })
+    BT:AddLabel('Color'):AddColorPicker('tr_Color', { Default = BLUE_BRIGHT })
     BT:AddSlider('tr_Width', { Text = 'Width', Min = 0.1, Max = 5, Default = 1.5, Rounding = 1 })
     BT:AddSlider('tr_Transparency', { Text = 'Transparency', Min = 0, Max = 1, Default = 0, Rounding = 2 })
     BT:AddSlider('tr_LifeTime', { Text = 'Life Time', Min = 0.1, Max = 3, Default = 0.5, Rounding = 1 })
@@ -3411,21 +3610,21 @@ do
     local HLB = Tabs.Visuals:AddRightGroupbox('Hit Logs')
     HLB:AddToggle('hl_Enabled', { Text = 'Enabled', Default = false })
     HLB:AddSlider('hl_Duration', { Text = 'Duration', Default = 5, Min = 1, Max = 15, Rounding = 0 })
-    HLB:AddLabel('Log Color'):AddColorPicker('hl_Color', { Default = rgb(176, 176, 209) })
+    HLB:AddLabel('Log Color'):AddColorPicker('hl_Color', { Default = BLUE_BRIGHT })
 
     local HMB = Tabs.Visuals:AddLeftGroupbox('Hitmarker')
     HMB:AddToggle('hm_Enabled', { Text = 'Enabled', Default = false })
     HMB:AddSlider('hm_Size', { Text = 'Size', Default = 12, Min = 5, Max = 40, Rounding = 0 })
     HMB:AddSlider('hm_Thickness', { Text = 'Thickness', Default = 2, Min = 1, Max = 5, Rounding = 1 })
-    HMB:AddSlider('hm_OutlineThickness', { Text = 'Outline Thickness', Default = 4, Min = 0, Max = 8, Rounding = 1 })
+    HMB:AddSlider('hm_OutlineThickness', { Text = 'Outline Thickness', Default = 0.5, Min = 0, Max = 6, Rounding = 1 })
     HMB:AddSlider('hm_Duration', { Text = 'Duration', Default = 2.5, Min = 0.5, Max = 6, Rounding = 1 })
-    HMB:AddLabel('Hit Color'):AddColorPicker('hm_Color', { Default = rgb(255, 255, 255) })
-    HMB:AddLabel('Kill Color'):AddColorPicker('hm_KillColor', { Default = rgb(220, 80, 80) })
+    HMB:AddLabel('Hit Color'):AddColorPicker('hm_Color', { Default = BLUE_BRIGHT })
+    HMB:AddLabel('Kill Color'):AddColorPicker('hm_KillColor', { Default = BLUE_MID })
     HMB:AddLabel('Outline Color'):AddColorPicker('hm_OutlineColor', { Default = rgb(0, 0, 0) })
 
     local HSB = Tabs.Visuals:AddRightGroupbox('Hit Sounds')
     HSB:AddToggle('hs_Enabled', { Text = 'Hit Sound Enabled', Default = false })
-    HSB:AddDropdown('hs_Choice', { Text = 'Sound', Values = F.HSNames or HitSoundNames, Default = 1, Multi = false })
+    HSB:AddDropdown('hs_Choice', { Text = 'Sound', Values = F.HSNames or { "None" }, Default = 1, Multi = false })
     HSB:AddSlider('hs_Volume', { Text = 'Volume', Min = 0, Max = 10, Default = 1, Rounding = 1 })
     HSB:AddToggle('ks_Enabled', { Text = 'Kill Sound', Default = false })
     HSB:AddDropdown('ks_Choice', { Text = 'Kill Sound', Values = KillSoundNames, Default = 1, Multi = false })
@@ -3438,13 +3637,13 @@ do
     WV:AddToggle('wv_DeleteSpikes', { Text = 'Delete Spikes', Default = false })
     WV:AddToggle('wv_DeleteLeaves', { Text = 'Delete Leaves', Default = false })
 
-    local WB = Tabs.Visuals:AddRightGroupbox('Water & Sky')
+    local WB = Tabs.Visuals:AddRightGroupbox('World Visuals')
     WB:AddToggle('wb_Enabled', { Text = 'Custom Water', Default = false })
-    WB:AddLabel('Water Color'):AddColorPicker('wb_Color', { Default = rgb(128, 128, 128) })
+    WB:AddLabel('Water Color'):AddColorPicker('wb_Color', { Default = BLUE_MID })
     WB:AddSlider('wb_Reflectance', { Text = 'Reflectance', Default = 0.3, Min = 0, Max = 1, Rounding = 2 })
     WB:AddDivider()
-    WB:AddToggle('sky_Toggle', { Text = 'Sky Color', Default = false })
-    WB:AddLabel('Sky Color'):AddColorPicker('sky_Color', { Default = rgb(135, 200, 255) })
+    WB:AddToggle('sky_Toggle', { Text = 'Ambience', Default = false })
+    WB:AddLabel('Ambience Color'):AddColorPicker('sky_Color', { Default = BLUE_BRIGHT })
 
     local SkyData = {
         ["Blue Sky"]    = { 591058823, 591059876, 591058104, 591057861, 591057625, 591059642 },
@@ -3482,9 +3681,9 @@ do
     local WMBox = Tabs.Visuals:AddRightGroupbox('Watermark')
     WMBox:AddToggle('wm_Enabled', { Text = 'Enable Watermark', Default = true })
 
-    local IB = Tabs.Visuals:AddRightGroupbox('Inventory Inspector')
-    IB:AddToggle('inv_Enabled', { Text = 'Enable Target Inventory', Default = false })
-    IB:AddSlider('inv_Scale', { Text = 'Inventory Scale', Default = 1, Min = 0.6, Max = 2, Rounding = 2 })
+    local IB = Tabs.Visuals:AddRightGroupbox('Inventory Preview')
+    IB:AddToggle('inv_Enabled', { Text = 'Enable Inv Prev', Default = false })
+   IB:AddSlider('inv_Scale', { Text = 'Inventory Prev Scale', Default = 1, Min = 0.6, Max = 1.2, Rounding = 2 })
 end
 
 do
@@ -3499,7 +3698,7 @@ do
     MB:AddToggle('mv_NoJumpDelay', { Text = 'No Jump Delay', Default = false })
 
     local SP = Tabs.Player:AddRightGroupbox('Spider')
-    SP:AddToggle('sp_Enabled', { Text = 'Spider Climb', Default = false })
+    SP:AddToggle('sp_Enabled', { Text = 'Spider', Default = false })
         :AddKeyPicker('sp_Key', { Default = 'None', Mode = 'Toggle', SyncToggleState = true, Text = 'Spider' })
     SP:AddSlider('sp_Speed', { Text = 'Climb Speed', Default = 50, Min = 20, Max = 150, Rounding = 0 })
 
@@ -3518,13 +3717,10 @@ do
     AA:AddDropdown('aa_Mode', { Text = 'Mode', Values = { 'Spin', 'Jitter' }, Default = 1, Multi = false })
     AA:AddSlider('aa_Speed', { Text = 'Spin Speed (deg/s)', Default = 180, Min = 30, Max = 1440, Rounding = 0 })
     AA:AddSlider('aa_JitterRange', { Text = 'Jitter Range (deg)', Default = 45, Min = 5, Max = 180, Rounding = 0 })
-    AA:AddDivider()
-    AA:AddToggle('aa_HeadTilt', { Text = 'Head Tilt', Default = false })
-    AA:AddSlider('aa_HeadPitch', { Text = 'Head Pitch', Default = -45, Min = -90, Max = 45, Rounding = 0 })
 
     local SPN = Tabs.Player:AddRightGroupbox('Spin')
-    SPN:AddToggle('spin_Enabled', { Text = 'Spin BackTrack', Default = false })
-    SPN:AddSlider('spin_Speed', { Text = 'Spin SPD', Default = 180, Min = 10, Max = 1440, Rounding = 0 })
+    SPN:AddToggle('spin_Enabled', { Text = 'Spin Model', Default = false })
+    SPN:AddSlider('spin_Speed', { Text = 'Spin Speed (deg/s)', Default = 45, Min = 10, Max = 360, Rounding = 0 })
 
     local TP = Tabs.Player:AddLeftGroupbox('Third Person')
     TP:AddToggle('tp_Enabled', { Text = 'Third Person', Default = false })
@@ -3533,7 +3729,7 @@ do
     TP:AddSlider('tp_Height', { Text = 'Camera Height', Min = 0, Max = 20, Default = 4.2, Rounding = 1 })
 
     local MC = Tabs.Player:AddLeftGroupbox('Model Changer')
-    MC:AddToggle('mc_Enabled', { Text = 'Enable Model Changer', Default = false })
+    MC:AddToggle('mc_Enabled', { Text = 'Enable Model Changer', Default = true })
     MC:AddDropdown('mc_Model', { Text = 'Model', Values = F.SkinNames, Default = 1, Multi = false })
     MC:AddSlider('mc_Scale', { Text = 'Model Scale', Default = 1, Min = 0.1, Max = 3, Rounding = 2 })
     MC:AddSlider('mc_YOffset', { Text = 'Y Offset', Default = 0, Min = -5, Max = 5, Rounding = 2 })
@@ -3549,7 +3745,7 @@ do
     FE:AddLabel('Copter Fly - PC only')
     FE:AddLabel('Sit on passenger seat')
     FE:AddLabel('Press keybind to fly')
-    FE:AddLabel('Melee Mods - weapon tweaks')
+    FE:AddLabel('')
 
     local MenuGroup = Tabs.Misc:AddRightGroupbox('Menu')
     MenuGroup:AddButton({ Text = 'Unload', Func = function() Library:Unload() end })
@@ -3586,10 +3782,21 @@ do
     Toggles.sa_TargetLine:OnChanged(function() Settings.SA.TargetLine = Toggles.sa_TargetLine.Value end)
     Options.sa_TargetPart:OnChanged(function() Settings.SA.TargetPart = Options.sa_TargetPart.Value end)
 
+    Options.fov_RingColor:OnChanged(function() Settings.SAColor.NoTarget = Options.fov_RingColor.Value end)
+    Options.fov_RingTargetColor:OnChanged(function() Settings.SAColor.Target = Options.fov_RingTargetColor.Value end)
+    Options.fov_GradLight:OnChanged(function() Settings.SAOutline.GradientLight = Options.fov_GradLight.Value end)
+    Options.fov_GradDark:OnChanged(function() Settings.SAOutline.GradientDark = Options.fov_GradDark.Value end)
     Options.fov_OuterColor:OnChanged(function() Settings.SAOutline.OuterColor = Options.fov_OuterColor.Value end)
-    Options.fov_OuterThickness:OnChanged(function() Settings.SAOutline.OuterThickness = Options.fov_OuterThickness.Value end)
     Options.fov_InnerColor:OnChanged(function() Settings.SAOutline.InnerColor = Options.fov_InnerColor.Value end)
-    Options.fov_InnerThickness:OnChanged(function() Settings.SAOutline.InnerThickness = Options.fov_InnerThickness.Value end)
+    Toggles.fov_FillEnabled:OnChanged(function() Settings.SAOutline.FillEnabled = Toggles.fov_FillEnabled.Value end)
+    Options.fov_FillLight:OnChanged(function() Settings.SAOutline.FillColorLight = Options.fov_FillLight.Value end)
+    Options.fov_FillDark:OnChanged(function() Settings.SAOutline.FillColorDark = Options.fov_FillDark.Value end)
+    Options.fov_FillTransparency:OnChanged(function() Settings.SAOutline.FillTransparency = Options.fov_FillTransparency.Value end)
+
+    Options.tl_Color:OnChanged(function() Settings.SnapLine.Color = Options.tl_Color.Value end)
+    Options.tl_OutlineColor:OnChanged(function() Settings.SnapLine.OutlineColor = Options.tl_OutlineColor.Value end)
+    Options.tl_Thickness:OnChanged(function() Settings.SnapLine.Thickness = Options.tl_Thickness.Value end)
+    Options.tl_OutlineThickness:OnChanged(function() Settings.SnapLine.OutlineThickness = Options.tl_OutlineThickness.Value end)
 
     Toggles.bt_BacktrackEnabled:OnChanged(function() Settings.Backtrack.Enabled = Toggles.bt_BacktrackEnabled.Value end)
     Options.bt_OffsetBack:OnChanged(function() Settings.Backtrack.OffsetBack = Options.bt_OffsetBack.Value end)
@@ -3618,10 +3825,6 @@ do
             Settings.Reload.ReloadUntil = 0
         end
     end)
-
-    Toggles.mm_Enabled:OnChanged(function() Settings.Guns.MeleeMods = Toggles.mm_Enabled.Value end)
-    Options.mm_Speed:OnChanged(function() Settings.Guns.MeleeSpeed = Options.mm_Speed.Value end)
-    Options.mm_Range:OnChanged(function() Settings.Guns.MeleeRange = Options.mm_Range.Value end)
 
     Toggles.hb_Enabled:OnChanged(function()
         Settings.Hitbox.Enabled = Toggles.hb_Enabled.Value
@@ -3658,9 +3861,11 @@ do
 
     Toggles.hs_Enabled:OnChanged(function()
         Settings.HitSound.Enabled = Toggles.hs_Enabled.Value
+        local ch = localPlayer.Character
         if Settings.HitSound.Enabled then
-            if localPlayer.Character then F.applyHSChar(localPlayer.Character) end
+            if ch then F.setupHSChar(ch) end
         else
+            F.cleanupHSChar()
             F.restoreHS()
         end
     end)
@@ -3702,8 +3907,6 @@ do
 
     Toggles.mv_Speed:OnChanged(function() Settings.Speed.Enabled = Toggles.mv_Speed.Value end)
     Options.mv_SpeedValue:OnChanged(function() Settings.Speed.Value = Options.mv_SpeedValue.Value end)
-    Toggles.mv_CopterSpeed:OnChanged(function() Settings.CopterSpeed.Enabled = Toggles.mv_CopterSpeed.Value end)
-    Options.mv_CopterSpeedValue:OnChanged(function() Settings.CopterSpeed.Value = Options.mv_CopterSpeedValue.Value end)
     Toggles.mv_WaterSpeed:OnChanged(function() Settings.WaterSpeed.Enabled = Toggles.mv_WaterSpeed.Value end)
     Options.mv_WaterSpeedValue:OnChanged(function() Settings.WaterSpeed.Value = Options.mv_WaterSpeedValue.Value end)
     Toggles.mv_NoFallDamage:OnChanged(function() F.toggleNoFall(Toggles.mv_NoFallDamage.Value) end)
@@ -3751,8 +3954,6 @@ do
     Options.aa_Mode:OnChanged(function() Settings.AntiAim.Mode = Options.aa_Mode.Value end)
     Options.aa_Speed:OnChanged(function() Settings.AntiAim.Speed = Options.aa_Speed.Value end)
     Options.aa_JitterRange:OnChanged(function() Settings.AntiAim.JitterRange = Options.aa_JitterRange.Value end)
-    Toggles.aa_HeadTilt:OnChanged(function() Settings.AntiAim.HeadTilt = Toggles.aa_HeadTilt.Value end)
-    Options.aa_HeadPitch:OnChanged(function() Settings.AntiAim.HeadPitch = Options.aa_HeadPitch.Value end)
 
     Toggles.spin_Enabled:OnChanged(function() Settings.Spin.Enabled = Toggles.spin_Enabled.Value end)
     Options.spin_Speed:OnChanged(function() Settings.Spin.Speed = Options.spin_Speed.Value end)
@@ -3908,6 +4109,8 @@ Library:OnUnload(function()
     pcall(function() ScreenGui:Destroy() end)
     pcall(function() F.fovGui:Destroy() end)
     pcall(function() if F.watermarkGui then F.watermarkGui:Destroy() end end)
+    pcall(function() if F.snapLineOutline then F.snapLineOutline:Remove() end end)
+    pcall(function() if F.snapLineMain then F.snapLineMain:Remove() end end)
     pcall(F.cleanupHitLogs)
     pcall(F.cleanupDamageTracking)
     pcall(F.cleanupHitMarkers)
